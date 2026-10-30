@@ -1091,16 +1091,16 @@ impl IRawElementProviderFragment_Impl for PlatformNode_Impl {
 
     fn BoundingRectangle(&self) -> Result<UiaRect> {
         self.resolve_with_context(|node, context| {
-            let rect = node.bounding_box().map_or(UiaRect::default(), |rect| {
-                let client_top_left = context.client_top_left();
-                UiaRect {
-                    left: rect.x0 + client_top_left.x,
-                    top: rect.y0 + client_top_left.y,
-                    width: rect.width(),
-                    height: rect.height(),
-                }
-            });
-            Ok(rect)
+            let Some(rect) = node.bounding_box() else {
+                return Ok(UiaRect::default());
+            };
+            let client_top_left = context.client_top_left()?;
+            Ok(UiaRect {
+                left: rect.x0 + client_top_left.x,
+                top: rect.y0 + client_top_left.y,
+                width: rect.width(),
+                height: rect.height(),
+            })
         })
     }
 
@@ -1128,7 +1128,7 @@ impl IRawElementProviderFragment_Impl for PlatformNode_Impl {
 impl IRawElementProviderFragmentRoot_Impl for PlatformNode_Impl {
     fn ElementProviderFromPoint(&self, x: f64, y: f64) -> Result<IRawElementProviderFragment> {
         self.resolve_with_context(|node, context| {
-            let client_top_left = context.client_top_left();
+            let client_top_left = context.client_top_left()?;
             let point = Point::new(x - client_top_left.x, y - client_top_left.y);
             let point = node.transform().inverse() * point;
             node.node_at_point(point, &filter).map_or_else(
@@ -1425,7 +1425,7 @@ patterns! {
 
         fn RangeFromPoint(&self, point: &UiaPoint) -> Result<ITextRangeProvider> {
             self.resolve_with_context_for_text_pattern(|node, context| {
-                let client_top_left = context.client_top_left();
+                let client_top_left = context.client_top_left()?;
                 let point = Point::new(point.x - client_top_left.x, point.y - client_top_left.y);
                 let point = node.transform().inverse() * point;
                 let pos = node.text_position_at_point(point);

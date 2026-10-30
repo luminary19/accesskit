@@ -65,7 +65,7 @@ impl Context {
         self.tree.read().unwrap()
     }
 
-    pub(crate) fn client_top_left(&self) -> Point {
+    pub(crate) fn client_top_left(&self) -> windows::core::Result<Point> {
         client_top_left(self.hwnd)
     }
 

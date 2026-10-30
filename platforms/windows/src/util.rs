@@ -302,12 +302,20 @@ pub(crate) fn not_supported() -> Error {
     HRESULT(UIA_E_NOTSUPPORTED as _).into()
 }
 
-pub(crate) fn client_top_left(hwnd: WindowHandle) -> Point {
+pub(crate) fn client_top_left(hwnd: WindowHandle) -> Result<Point> {
     let mut result = POINT::default();
-    // If ClientToScreen fails, that means the window is gone.
-    // That's an unexpected condition, so we should fail loudly.
-    unsafe { ClientToScreen(hwnd.0, &mut result) }.unwrap();
-    Point::new(result.x.into(), result.y.into())
+    // A provider query can retain its context while the native window is destroyed.
+    // Report the unavailable element through UI Automation instead of panicking.
+    unsafe { ClientToScreen(hwnd.0, &mut result) }
+        .ok()
+        .map_err(|error| {
+            if error.code() == HRESULT::from_win32(ERROR_INVALID_WINDOW_HANDLE.0) {
+                element_not_available()
+            } else {
+                error
+            }
+        })?;
+    Ok(Point::new(result.x.into(), result.y.into()))
 }
 
 pub(crate) fn window_title(hwnd: WindowHandle) -> Option<BSTR> {

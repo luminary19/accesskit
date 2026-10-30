@@ -500,7 +500,7 @@ impl ITextRangeProvider_Impl for PlatformRange_Impl {
             if rects.is_empty() {
                 return Ok(std::ptr::null_mut());
             }
-            let client_top_left = context.client_top_left();
+            let client_top_left = context.client_top_left()?;
             let mut result = Vec::<f64>::with_capacity(rects.len() * 4);
             for rect in rects {
                 result.push(rect.x0 + client_top_left.x);
